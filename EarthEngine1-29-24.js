@@ -87,7 +87,6 @@ function getQABits(image, start, end, newName) {
     }
     // Return a single band image of the extracted QA bits, giving the band
     // a new name.
-    print(pattern)
     return image.select([0], [newName])
                   .bitwiseAnd(pattern)
                   .rightShift(start);
