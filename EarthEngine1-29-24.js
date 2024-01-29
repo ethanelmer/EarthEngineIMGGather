@@ -34,7 +34,10 @@ function gatherImages(dataSource, rectangle){
     //Map.addLayer(rawIMG.clip(rectangle), null, 'RawIMG'+counter)
     
     //NDVI IMG Stuff
-    //ndviConversion(rawIMG, rectangle, counter)
+    var ndviParams = {min: -1, max: 0.5, palette: ['blue', 'white', 'green']}
+    ndviIMG = ndviConversion(rawIMG, rectangle, counter)
+    //downloadIMG(ndviIMG, ndviName)
+    //Map.addLayer(ndviIMG.clip(rectangle), ndviParams, ndviName)
     
     //BandsIMG Stuff
     var bandsIMG = rawIMG.addBands(rawIMG, ['B1','B4'])
@@ -44,8 +47,8 @@ function gatherImages(dataSource, rectangle){
     //MaskedIMG Stuff
     var maskedIMG = dataSource.filterDate(filterStartDate, filterEndDate).map(maskQuality)
     var maskedIMGName = 'MaskedIMG' + counter
-    downloadIMG(maskedIMG, maskedIMGName)
-    //Map.addLayer(maskedIMG, null, 'maskedIMG'+counter)
+    //downloadIMG(maskedIMG, maskedIMGName)
+    Map.addLayer(maskedIMG, null, 'maskedIMG'+counter)
     
   }
 }
@@ -59,6 +62,17 @@ function downloadIMG(image, name){
         maxPixels: 1e13,
        scale:'30' 
     });
+}
+
+function ndviConversion(rawIMG, rectangle, counter){
+  var ndviName = 'ndviIMG'+counter
+  //(NIR - RED) / (NIR + RED)
+  //Red is R for NAIP
+  //NIR is N for NAIP
+  var red = rawIMG.select('B3')
+  var nir = rawIMG.select('B4')
+  var ndviIMG = nir.subtract(red).divide(nir.add(red))
+  return ndviIMG 
 }
 
 // A function to mask out cloudy pixels.
