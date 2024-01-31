@@ -1,7 +1,6 @@
 ///////////////////IMPORTS START///////////////////
 var rectangle = 
     /* color: #d63000 */
-    /* shown: false */
     /* displayProperties: [
       {
         "type": "rectangle"
@@ -12,10 +11,12 @@ var rectangle =
           [-90.27868759504018, 29.100972302151064],
           [-90.22954952588734, 29.100972302151064],
           [-90.22954952588734, 29.14674702983323]]], null, false),
-    LANDSAT7 = ee.ImageCollection("LANDSAT/LE07/C02/T1_RT");
+    LANDSAT7 = ee.ImageCollection("LANDSAT/LE07/C02/T1_RT"),
+    Sentinel = ee.ImageCollection("COPERNICUS/S1_GRD"),
+    NAIP = ee.ImageCollection("USDA/NAIP/DOQQ");
 ///////////////////IMPORTS END///////////////////
 
-var dataSource = LANDSAT7
+var dataSource = Sentinel
 gatherImages(dataSource,rectangle)
 
 function gatherImages(dataSource, rectangle){
@@ -30,25 +31,33 @@ function gatherImages(dataSource, rectangle){
     //RawIMG Stuff
     var rawIMGName = 'RawIMG'+counter
     var rawIMG = ee.ImageCollection(dataSource).filterDate(filterStartDate, filterEndDate).filterBounds(rectangle).median();
-    //downloadIMG(rawIMG, rawIMGName)
+    downloadIMG(rawIMG, rawIMGName)
     //Map.addLayer(rawIMG.clip(rectangle), null, 'RawIMG'+counter)
     
     //NDVI IMG Stuff
     var ndviParams = {min: -1, max: 0.5, palette: ['blue', 'white', 'green']}
-    ndviIMG = ndviConversion(rawIMG, rectangle, counter)
+    //var ndviIMG = ndviConversion(rawIMG, rectangle, counter)
     //downloadIMG(ndviIMG, ndviName)
     //Map.addLayer(ndviIMG.clip(rectangle), ndviParams, ndviName)
     
+    //ADD NDVI Band Stuff
+    // var ndviIMGBand = addNDVIBand(rawIMG, rectangle, counter).clip(rectangle)
+    // var addedBands = rawIMG.addBands(ndviIMG, ['NDVI'] )
+    // var NDVImedian = ee.ImageCollection(addedBands).select('NDVI').median()
+    // var NDVImedianName = 'NDVIMedian'+counter
+    // //Map.addLayer(NDVImedian, null, NDVImedianName)
+    // downloadIMG(NDVImedian, NDVImedianName)
+    
     //BandsIMG Stuff
-    var bandsIMG = rawIMG.addBands(rawIMG, ['B1','B4'])
-    var bandsIMGName = 'BandsIMG'+counter
+    //var bandsIMG = rawIMG.addBands(rawIMG, ['B1','B4'])
+    //var bandsIMGName = 'BandsIMG'+counter
     //dowloadIMG(bandsIMG,)
     
     //MaskedIMG Stuff
-    var maskedIMG = dataSource.filterDate(filterStartDate, filterEndDate).map(maskQuality)
-    var maskedIMGName = 'MaskedIMG' + counter
+    //var maskedIMG = dataSource.filterDate(filterStartDate, filterEndDate).map(maskQuality)
+    //var maskedIMGName = 'MaskedIMG' + counter
     //downloadIMG(maskedIMG, maskedIMGName)
-    Map.addLayer(maskedIMG, null, 'maskedIMG'+counter)
+    //Map.addLayer(maskedIMG, null, maskedIMGName)
     
   }
 }
@@ -56,11 +65,11 @@ function gatherImages(dataSource, rectangle){
 function downloadIMG(image, name){
       Export.image.toDrive({image: image, 
                       folder: 'Mariotti',
-                      description: "MangrovesTerre1"+name, 
+                      description: "SentinelTerre1"+name, 
                       crs: 'EPSG:4326',
              region: rectangle,
         maxPixels: 1e13,
-       scale:'30' 
+       scale:'10' 
     });
 }
 
@@ -75,6 +84,18 @@ function ndviConversion(rawIMG, rectangle, counter){
   return ndviIMG 
 }
 
+function AddNDVIBand(rawIMG, rectangle, counter){
+  var ndviName = 'ndviIMG'+counter
+  //(NIR - RED) / (NIR + RED)
+  //Red is B4 for Sentinel
+  //NIR is B8 for Sentinel
+  var red = rawIMG.select('B3')
+  var nir = rawIMG.select('B8')
+  var ndvi = rawIMG.normalizedDifference(['B8', 'B4']).rename('NDVI');
+  var img = rawIMG.addBands(ndvi);
+  return img 
+}
+
 // A function to mask out cloudy pixels.
 function maskQuality(image) {
   // Select the QA band.
@@ -84,7 +105,6 @@ function maskQuality(image) {
   var internalQuality2 = getQABits(QA,8, 9, 'cloud confidence');
   var internalQuality3 = getQABits(QA,4,4, 'cloud shadow');
   var internalQuality4 = getQABits(QA,6,6, 'clear');
-  var QA2 = image.select('QA');
   // Return an image masking out cloudy areas.
   return image.updateMask(internalQuality.eq(0))
   .updateMask(internalQuality2.eq(0))
