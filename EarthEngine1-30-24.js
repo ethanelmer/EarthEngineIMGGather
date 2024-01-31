@@ -47,14 +47,14 @@ function gatherImages(dataSource, rectangle){
     //BandsIMGMedian 
     // var ndviIMGMedian = ndviBandMedian(rawIMGMedian, rectangle, counter).clip(rectangle)
     // var addedBandsMedian = rawIMG10perc.addBands(ndviIMGMedian, ['NDVI'] )
-    // var bandsIMGMedian = ee.ImageCollection(addedBandsMedian).select('NDVI').median()
+    // var bandsIMGMedian = ee.ImageCollection(addedBandsMedian).select('NDVI')
     // var bandsIMGMedianName = 'BandsIMGMedian'+counter
     // downloadIMG(bandsIMGMedian,bandsIMGMedianName)
     
     //BandsIMG10p 
     var ndviIMG10perc = ndviBand10perc(rawIMG10perc, rectangle, counter).clip(rectangle)
     var addedBands10perc = rawIMGMedian.addBands(ndviIMG10perc, ['NDVI'] )
-    var bandsIMG10p = ee.ImageCollection(addedBands10perc).select('NDVI').median()
+    var bandsIMG10p = ee.ImageCollection(addedBands10perc).select('NDVI')
     var bandsIMG10pName = 'BandsIMG10p'+counter
     downloadIMG(bandsIMG10p,bandsIMG10pName)
     
