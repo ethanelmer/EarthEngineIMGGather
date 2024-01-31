@@ -53,7 +53,7 @@ function gatherImages(dataSource, rectangle){
     
     //BandsIMG10p 
     var ndviIMG10perc = ndviBand10perc(rawIMG10perc, rectangle, counter).clip(rectangle)
-    var addedBands10perc = rawIMGMedian.addBands(ndviIMG10perc, ['NDVI'] )
+    var addedBands10perc = rawIMG10perc.addBands(ndviIMG10perc, ['NDVI'] )
     var bandsIMG10p = ee.ImageCollection(addedBands10perc).select('NDVI')
     var bandsIMG10pName = 'BandsIMG10p'+counter
     downloadIMG(bandsIMG10p,bandsIMG10pName)
