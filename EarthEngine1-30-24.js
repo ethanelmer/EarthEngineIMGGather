@@ -17,7 +17,6 @@ var rectangle =
     Sentinel = ee.ImageCollection("COPERNICUS/S2");
 ///////////////////IMPORTS END///////////////////
 
-
 var dataSource = Sentinel
 gatherImages(dataSource,rectangle)
 
@@ -26,12 +25,12 @@ function gatherImages(dataSource, rectangle){
   //counter = the year the data starts
   //counter <= the end year
   // counter += by the amount of years between pictures 
-  for(var counter = 2020; counter<=2023 ; counter = counter + 1){
+  for(var counter = 2023; counter<=2023 ; counter = counter + 1){
     var filterStartDate = counter + '-01-01'
     var filterEndDate = counter + '-12-31'
     
     //RawIMG 
-    var rawIMGMedianName = 'RawIMG'+counter
+    //var rawIMGMedianName = 'RawIMG'+counter
     var rawIMGMedian = ee.ImageCollection(dataSource).filterDate(filterStartDate, filterEndDate).filterBounds(rectangle).median();
     var rawIMG10perc = ee.ImageCollection(dataSource).filterDate(filterStartDate, filterEndDate).reduce(ee.Reducer.percentile([10]));
     //downloadIMG(rawIMGMedian, rawIMGMedianName)
@@ -49,6 +48,7 @@ function gatherImages(dataSource, rectangle){
     // var addedBandsMedian = rawIMG10perc.addBands(ndviIMGMedian, ['NDVI'] )
     // var bandsIMGMedian = ee.ImageCollection(addedBandsMedian).select('NDVI')
     // var bandsIMGMedianName = 'BandsIMGMedian'+counter
+    // Map.addLayer (bandsIMGMedian, null, bandsIMGMedianName)
     // downloadIMG(bandsIMGMedian,bandsIMGMedianName)
     
     //BandsIMG10p 
@@ -56,6 +56,7 @@ function gatherImages(dataSource, rectangle){
     var addedBands10perc = rawIMG10perc.addBands(ndviIMG10perc, ['NDVI'] )
     var bandsIMG10p = ee.ImageCollection(addedBands10perc).select('NDVI')
     var bandsIMG10pName = 'BandsIMG10p'+counter
+    Map.addLayer(bandsIMG10p, null, bandsIMG10pName)
     downloadIMG(bandsIMG10p,bandsIMG10pName)
     
     //MaskedIMG 
