@@ -12,9 +12,11 @@ var rectangle =
           [-90.22954952588734, 29.100972302151064],
           [-90.22954952588734, 29.14674702983323]]], null, false),
     LANDSAT7 = ee.ImageCollection("LANDSAT/LE07/C02/T1_RT"),
-    Sentinel = ee.ImageCollection("COPERNICUS/S1_GRD"),
-    NAIP = ee.ImageCollection("USDA/NAIP/DOQQ");
+    Copernicus = ee.ImageCollection("COPERNICUS/S1_GRD"),
+    NAIP = ee.ImageCollection("USDA/NAIP/DOQQ"),
+    Sentinel = ee.ImageCollection("COPERNICUS/S2");
 ///////////////////IMPORTS END///////////////////
+
 
 var dataSource = Sentinel
 gatherImages(dataSource,rectangle)
@@ -28,36 +30,39 @@ function gatherImages(dataSource, rectangle){
     var filterStartDate = counter + '-01-01'
     var filterEndDate = counter + '-12-31'
     
-    //RawIMG Stuff
-    var rawIMGName = 'RawIMG'+counter
-    var rawIMG = ee.ImageCollection(dataSource).filterDate(filterStartDate, filterEndDate).filterBounds(rectangle).median();
-    downloadIMG(rawIMG, rawIMGName)
-    //Map.addLayer(rawIMG.clip(rectangle), null, 'RawIMG'+counter)
+    //RawIMG 
+    var rawIMGMedianName = 'RawIMG'+counter
+    var rawIMGMedian = ee.ImageCollection(dataSource).filterDate(filterStartDate, filterEndDate).filterBounds(rectangle).median();
+    var rawIMG10perc = ee.ImageCollection(dataSource).filterDate(filterStartDate, filterEndDate).reduce(ee.Reducer.percentile([10]));
+    //downloadIMG(rawIMGMedian, rawIMGMedianName)
+    //Map.addLayer(rawIMGMedian.clip(rectangle), null, 'RawIMGMedian'+counter)
     
-    //NDVI IMG Stuff
-    var ndviParams = {min: -1, max: 0.5, palette: ['blue', 'white', 'green']}
-    //var ndviIMG = ndviConversion(rawIMG, rectangle, counter)
-    //downloadIMG(ndviIMG, ndviName)
-    //Map.addLayer(ndviIMG.clip(rectangle), ndviParams, ndviName)
+    //NDVI IMG 
+    // var ndviParams = {min: -1, max: 0.5, palette: ['blue', 'white', 'green']}
+    // var ndviIMG = ndviConversion(rawIMGMedian, rectangle, counter)
+    // var ndviName = 'NDVI'+counter
+    // downloadIMG(ndviIMG, ndviName)
+    // Map.addLayer(ndviIMG.clip(rectangle), ndviParams, ndviName)
     
-    //ADD NDVI Band Stuff
-    // var ndviIMGBand = addNDVIBand(rawIMG, rectangle, counter).clip(rectangle)
-    // var addedBands = rawIMG.addBands(ndviIMG, ['NDVI'] )
-    // var NDVImedian = ee.ImageCollection(addedBands).select('NDVI').median()
-    // var NDVImedianName = 'NDVIMedian'+counter
-    // //Map.addLayer(NDVImedian, null, NDVImedianName)
-    // downloadIMG(NDVImedian, NDVImedianName)
+    //BandsIMGMedian 
+    // var ndviIMGMedian = ndviBandMedian(rawIMGMedian, rectangle, counter).clip(rectangle)
+    // var addedBandsMedian = rawIMG10perc.addBands(ndviIMGMedian, ['NDVI'] )
+    // var bandsIMGMedian = ee.ImageCollection(addedBandsMedian).select('NDVI').median()
+    // var bandsIMGMedianName = 'BandsIMGMedian'+counter
+    // downloadIMG(bandsIMGMedian,bandsIMGMedianName)
     
-    //BandsIMG Stuff
-    //var bandsIMG = rawIMG.addBands(rawIMG, ['B1','B4'])
-    //var bandsIMGName = 'BandsIMG'+counter
-    //dowloadIMG(bandsIMG,)
+    //BandsIMG10p 
+    var ndviIMG10perc = ndviBand10perc(rawIMG10perc, rectangle, counter).clip(rectangle)
+    var addedBands10perc = rawIMGMedian.addBands(ndviIMG10perc, ['NDVI'] )
+    var bandsIMG10p = ee.ImageCollection(addedBands10perc).select('NDVI').median()
+    var bandsIMG10pName = 'BandsIMG10p'+counter
+    downloadIMG(bandsIMG10p,bandsIMG10pName)
     
-    //MaskedIMG Stuff
-    //var maskedIMG = dataSource.filterDate(filterStartDate, filterEndDate).map(maskQuality)
-    //var maskedIMGName = 'MaskedIMG' + counter
-    //downloadIMG(maskedIMG, maskedIMGName)
-    //Map.addLayer(maskedIMG, null, maskedIMGName)
+    //MaskedIMG 
+    // var maskedIMG = dataSource.filterDate(filterStartDate, filterEndDate).map(maskQuality)
+    // var maskedIMGName = 'MaskedIMG' + counter
+    // downloadIMG(maskedIMG, maskedIMGName)
+    // Map.addLayer(maskedIMG, null, maskedIMGName)
     
   }
 }
@@ -84,13 +89,21 @@ function ndviConversion(rawIMG, rectangle, counter){
   return ndviIMG 
 }
 
-function AddNDVIBand(rawIMG, rectangle, counter){
+function ndviBand10perc(rawIMG, rectangle, counter){
+  var ndviName = 'ndviIMG'+counter
+  //(NIR - RED) / (NIR + RED)
+  //Red is B4_p10 for Sentinel
+  //NIR is B8_p10 for Sentinel
+  var ndvi = rawIMG.normalizedDifference(['B8_p10', 'B4_p10']).rename('NDVI');
+  var img = rawIMG.addBands(ndvi);
+  return img 
+}
+
+function ndviBandMedian(rawIMG, rectangle, counter){
   var ndviName = 'ndviIMG'+counter
   //(NIR - RED) / (NIR + RED)
   //Red is B4 for Sentinel
   //NIR is B8 for Sentinel
-  var red = rawIMG.select('B3')
-  var nir = rawIMG.select('B8')
   var ndvi = rawIMG.normalizedDifference(['B8', 'B4']).rename('NDVI');
   var img = rawIMG.addBands(ndvi);
   return img 
